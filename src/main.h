@@ -1,18 +1,33 @@
-//
-// Created by Felix on 15.01.26.
-//
-
 #ifndef RAY_MAIN_H
 #define RAY_MAIN_H
 
-#define WIDTH 800
-#define HEIGHT 600
+#include <iostream>
+#include "raylib.h"
+#include "imgui.h"
+#include "rlImGui.h"
+
+#define WIDTH 1200
+#define HEIGHT 800
+#define MAX_WALLS 10
 
 #define ASSERT(x) do { if(!(x)) std::cout << "Assertion failed: " << #x << std::endl; } while(0)
 #define LOG(x) do { std::cout << x << std::endl; } while(0)
 
-class main
-{
-};
+
+typedef struct {
+    int w, h;
+    Texture2D texture;
+} wall_t;
+
+typedef struct {
+    wall_t **walls;
+} level_t;
+
+typedef struct {
+    level_t level;
+    Vector2 m_pos;
+} state_t;
+
+inline state_t state;
 
 #endif // RAY_MAIN_H
