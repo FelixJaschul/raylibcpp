@@ -9,6 +9,7 @@
 #define HEIGHT 600
 
 #define ASSERT(x) do { if(!(x)) std::cout << "Assertion failed: " << #x << std::endl; } while(0)
+#define LOG(x) do { std::cout << x << std::endl; } while(0)
 
 class main
 {

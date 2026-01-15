@@ -6,9 +6,6 @@
 
 int main()
 {
-    std::cout << "Hello World!" << std::endl;
-
-    // Basic Raylib init test
     InitWindow(WIDTH, HEIGHT, "raycast");
     SetTargetFPS(60);
 
@@ -20,11 +17,8 @@ int main()
         ClearBackground(RAYWHITE);
 
         rlImGuiBegin();
-
         ImGui::ShowDemoWindow();
-
         rlImGuiEnd();
-
         EndDrawing();
     }
 
