@@ -10,13 +10,13 @@ int main()
     rlImGuiSetup(true);
     DisableCursor();
 
-    {
+    {   // Init one wall in level
         state.level.walls = new wall_t*[MAX_WALLS];
         state.level.walls[0] = new wall_t;
         state.level.walls[0]->texture = LoadTexture("../res/stone.png");;
     }
 
-    {
+    {   // Init camera object
         state.camera.position = (Vector3){ 0.0f, 2.0f, 10.0f };
         state.camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
         state.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
