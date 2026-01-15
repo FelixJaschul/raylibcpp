@@ -1,6 +1,7 @@
 #include <iostream>
 #include "raylib.h"
 #include "imgui.h"
+#include "rlImGui.h"
 #include "main.h"
 
 int main()
@@ -8,14 +9,26 @@ int main()
     std::cout << "Hello World!" << std::endl;
 
     // Basic Raylib init test
-    InitWindow(WIDTH, HEIGHT, "Test");
+    InitWindow(WIDTH, HEIGHT, "raycast");
+    SetTargetFPS(60);
+
+    rlImGuiSetup(true);
+
     while (!WindowShouldClose())
     {
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        DrawText("Hello Raylib!", 100, HEIGHT/2, 100, BLACK);
+
+        rlImGuiBegin();
+
+        ImGui::ShowDemoWindow();
+
+        rlImGuiEnd();
+
         EndDrawing();
     }
+
+    rlImGuiShutdown();
     CloseWindow();
 
     return 0;

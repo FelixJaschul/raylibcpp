@@ -17,6 +17,13 @@ add_library(imgui STATIC
 )
 target_include_directories(imgui PUBLIC lib/imgui)
 
+# rlImGui
+add_library(rlImGui STATIC
+        lib/rlImGui/rlImGui.cpp
+)
+target_include_directories(rlImGui PUBLIC lib/rlImGui)
+target_link_libraries(rlImGui PUBLIC raylib imgui)
+
 add_executable(ray main.cpp main.h)
-target_link_libraries(ray PRIVATE raylib imgui)
-target_include_directories(ray PRIVATE lib/raylib/src)
+target_link_libraries(ray PRIVATE raylib imgui rlImGui)
+target_include_directories(ray PRIVATE lib/raylib/src lib/rlImGui lib/imgui)
