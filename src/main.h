@@ -26,6 +26,7 @@ typedef struct {
 typedef struct {
     level_t level;
     Vector2 m_pos;
+    Camera3D camera;
 } state_t;
 
 inline state_t state;
