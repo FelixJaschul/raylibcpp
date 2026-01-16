@@ -238,6 +238,32 @@ int load_level(const char* path) {
     return 0;
 }
 
+// Save level to text file
+int save_level(const char* path) {
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        LOG("Error: Could not open level file for writing: " << path);
+        return -1;
+    }
+
+    file << "[SECTOR]\n";
+    for (size_t i = 1; i < state.level.sectors.size(); i++) {
+        const auto& s = state.level.sectors[i];
+        file << s.id << " " << s.firstwall << " " << s.nwalls << " " 
+             << s.zfloor << " " << s.zceil << " " << s.light << "\n";
+    }
+
+    file << "\n[WALL]\n";
+    for (size_t i = 0; i < state.level.walls.size(); i++) {
+        const auto& w = state.level.walls[i];
+        file << w.a.x << " " << w.a.y << " " << w.b.x << " " << w.b.y << " " << w.portal << "\n";
+    }
+
+    file.close();
+    LOG("Saved " << state.level.sectors.size() - 1 << " sectors and " << state.level.walls.size() << " walls to " << path);
+    return 0;
+}
+
 // Clean up level resources
 void cleanup_level() {
     // Unload all wall textures

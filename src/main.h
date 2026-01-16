@@ -80,7 +80,11 @@ inline state_t state;
 
 // Level loading functions
 int load_level(const char* path);
+int save_level(const char* path);
 void cleanup_level();
+
+// Main loop functions
+void update();
 
 // Utility functions
 bool point_in_sector(const sector_t* sector, v2f p);
