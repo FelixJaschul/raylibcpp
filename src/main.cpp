@@ -13,7 +13,7 @@ int main()
     rlImGuiSetup(true);
 
     {
-        ASSERT(load_level("res/level.txt") == 0);
+        ASSERT(load_level("../res/level.txt") == 0);
 
         {
             Texture2D default_tex = LoadTexture("../res/stone.png");
