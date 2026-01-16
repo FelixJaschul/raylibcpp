@@ -8,12 +8,17 @@ int main()
     SetTargetFPS(60);
 
     rlImGuiSetup(true);
-    DisableCursor();
 
     {   // Init one wall in level
-        state.level.walls = new wall_t*[MAX_WALLS];
-        state.level.walls[0] = new wall_t;
-        state.level.walls[0]->texture = LoadTexture("../res/stone.png");;
+        state.level.sectors = new sector_t*[MAX_SECT];
+        state.level.sectors[0] = new sector_t;
+        state.level.sectors[0]->floor_h = 0.0f;
+        state.level.sectors[0]->ceil_h  = 5.0f;
+        state.level.sectors[0]->walls = new wall_t*[MAX_WALLS];
+        state.level.sectors[0]->walls[0] = new wall_t;
+        state.level.sectors[0]->walls[0]->w = 10.0f;
+        state.level.sectors[0]->walls[0]->texture = LoadTexture("../res/stone.png");
+        SetTextureWrap(state.level.sectors[0]->walls[0]->texture, TEXTURE_WRAP_REPEAT);
     }
 
     {   // Init camera object
@@ -28,8 +33,15 @@ int main()
     while (!WindowShouldClose())
     {
         {   // Update
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsCursorHidden()) DisableCursor();
-            UpdateCamera(&state.camera, CAMERA_FIRST_PERSON);
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !ImGui::GetIO().WantCaptureMouse)
+            {
+                if (!IsCursorHidden()) DisableCursor();
+                UpdateCamera(&state.camera, CAMERA_FIRST_PERSON);
+            }
+            else
+            {
+                if (IsCursorHidden()) EnableCursor();
+            }
             state.m_pos = GetMousePosition();
         }
 
@@ -38,20 +50,26 @@ int main()
 
         {   // Draw in 3d World
             BeginMode3D(state.camera);
-            rlSetTexture(state.level.walls[0]->texture.id);
-            const auto [r, g, b, a] = WHITE;
             rlBegin(RL_QUADS);
-            rlColor4ub(r, g, b, a);
-            rlNormal3f(0.0f, 0.0f, 1.0f);
-            
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(-5.0f, 0.0f, 0.0f);
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f( 5.0f, 0.0f, 0.0f);
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f( 5.0f, 5.0f, 0.0f);
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(-5.0f, 5.0f, 0.0f);
-            
-            rlEnd();
+            {
+                rlSetTexture(state.level.sectors[0]->walls[0]->texture.id);
+                const auto [r, g, b, a] = WHITE;
+                rlColor4ub(r, g, b, a);
+                rlNormal3f(0.0f, 0.0f, 1.0f);
 
-            rlSetTexture(0);
+                const float w_w = state.level.sectors[0]->walls[0]->w;
+                const float s_h = state.level.sectors[0]->ceil_h;
+                const float x1  = -w_w / 2.0f, x2 = w_w / 2.0f;
+                const float f_h = state.level.sectors[0]->floor_h;
+                const float c_h = f_h + s_h;
+
+                rlTexCoord2f(0.0f, s_h);  rlVertex3f(x1, f_h, 0.0f);
+                rlTexCoord2f(w_w,  s_h);  rlVertex3f(x2, f_h, 0.0f);
+                rlTexCoord2f(w_w,  0.0f); rlVertex3f(x2, c_h, 0.0f);
+                rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x1, c_h, 0.0f);
+                rlSetTexture(0);
+            }
+            rlEnd();
             EndMode3D();
         }
 
@@ -67,6 +85,9 @@ int main()
                 ImGui::Text("Mouse: %.0f, %.0f", state.m_pos.x, state.m_pos.y);
                 ImGui::Text("Camera: %.1f, %.1f, %.1f", state.camera.position.x, state.camera.position.y, state.camera.position.z);
                 ImGui::Text("Looking at: Nothing");
+                ImGui::SliderFloat("Wall Width", &state.level.sectors[0]->walls[0]->w, 1.0f, 20.0f, "%.1f");
+                ImGui::SliderFloat("Sect Floor Height", &state.level.sectors[0]->floor_h, 0.0f, 20.0f, "%.1f");
+                ImGui::SliderFloat("Sect Ceil Height", &state.level.sectors[0]->ceil_h, 0.0f, 20.0f, "%.1f");
                 ImGui::End();
             }
 
@@ -77,11 +98,13 @@ int main()
     }
 
     // Cleanup
-    for (int i = 0; i < MAX_WALLS; i++) {
-        delete state.level.walls[i];
-        UnloadTexture(state.level.walls[i]->texture);
+    {
+        UnloadTexture(state.level.sectors[0]->walls[0]->texture);
+        delete state.level.sectors[0]->walls[0];
+        delete[] state.level.sectors[0]->walls;
+        delete state.level.sectors[0];
+        delete[] state.level.sectors;
     }
-    delete[] state.level.walls;
 
     rlImGuiShutdown();
     CloseWindow();

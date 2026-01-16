@@ -9,18 +9,26 @@
 #define WIDTH 1200
 #define HEIGHT 800
 #define MAX_WALLS 10
+#define MAX_SECT  10
 
 #define ASSERT(x) do { if(!(x)) std::cout << "Assertion failed: " << #x << std::endl; } while(0)
 #define LOG(x) do { std::cout << x << std::endl; } while(0)
 
+#define MAX(a, b) (( (a) > (b) ) ? (a) : (b))
+#define MIN(a, b) (( (a) < (b) ) ? (a) : (b))
 
 typedef struct {
-    int w, h;
+    float w;
     Texture2D texture;
 } wall_t;
 
 typedef struct {
+    float floor_h, ceil_h;
     wall_t **walls;
+} sector_t;
+
+typedef struct {
+    sector_t **sectors;
 } level_t;
 
 typedef struct {
