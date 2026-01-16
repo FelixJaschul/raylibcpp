@@ -1,4 +1,4 @@
-#### Copy of JDH's game but in raylib
+#### 3D Game in Raylib
 - written in cpp
 - & uses imgui
 
