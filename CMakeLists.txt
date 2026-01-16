@@ -24,8 +24,8 @@ add_library(rlImGui STATIC
 target_include_directories(rlImGui PUBLIC lib/rlImGui)
 target_link_libraries(rlImGui PUBLIC raylib imgui)
 
-add_executable(ray src/main.cpp src/main.h
+add_executable(ray src/main.cpp
         src/level.cpp
-        src/level.h)
-target_link_libraries(ray PRIVATE raylib imgui rlImGui)
+        src/ui.cpp)
+target_link_libraries(ray PRIVATE rlImGui)
 target_include_directories(ray PRIVATE lib/raylib/src lib/rlImGui lib/imgui)

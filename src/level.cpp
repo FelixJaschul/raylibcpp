@@ -1,10 +1,135 @@
 #include "main.h"
+#include "level.h"
 #include <fstream>
 #include <sstream>
 #include <cstring>
 #include <cctype>
 #include <cmath>
 #include <limits>
+
+int init_level()
+{
+    ASSERT(load_level("../res/level.txt") == 0);
+
+    for (auto& wall : state.level.walls)
+    {
+        wall.texture = LoadTexture("../res/stone.png");
+        SetTextureWrap(wall.texture, TEXTURE_WRAP_REPEAT);
+    }
+    state.ground_texture = LoadTexture("../res/ground.png");
+    SetTextureWrap(state.ground_texture, TEXTURE_WRAP_REPEAT);
+
+    return 0;
+}
+
+void deinit_level()
+{
+    cleanup_level();
+}
+
+void update_level()
+{
+    if (const int new_sector = find_player_sector({ state.camera.position.x, state.camera.position.z });
+        new_sector != SECTOR_NONE)
+        state.current_sector = new_sector;
+}
+
+void render_level()
+{
+    BeginMode3D(state.camera);
+
+    // Draw all walls in all sectors
+    for (size_t s = 1; s < state.level.sectors.size(); s++) {
+        const sector_t* sector = &state.level.sectors[s];
+
+        // Draw floor and ceiling
+        if (sector->nwalls >= 3)
+        {
+            const auto l = static_cast<unsigned char>(255 * sector->light);
+            const Color tint = { l, l, l, 255 };
+
+            if (state.ground_texture.id != 0) rlSetTexture(state.ground_texture.id);
+
+            rlBegin(RL_TRIANGLES);
+            rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+
+            for (size_t i = 1; i < sector->nwalls - 1; i++)
+            {
+                const wall_t* w0 = &state.level.walls[sector->firstwall];
+                const wall_t* wi = &state.level.walls[sector->firstwall + i];
+                const wall_t* wi1 = &state.level.walls[sector->firstwall + i + 1];
+
+                const float v0x  = static_cast<float>(w0->a.x);
+                const float v0z  = static_cast<float>(w0->a.y);
+                const float vix  = static_cast<float>(wi->a.x);
+                const float viz  = static_cast<float>(wi->a.y);
+                const float vi1x = static_cast<float>(wi1->a.x);
+                const float vi1z = static_cast<float>(wi1->a.y);
+
+                // Floor (facing up)
+                rlNormal3f(0.0f, 1.0f, 0.0f);
+                rlTexCoord2f(v0x, v0z);   rlVertex3f(v0x, sector->zfloor, v0z);
+                rlTexCoord2f(vi1x, vi1z); rlVertex3f(vi1x, sector->zfloor, vi1z);
+                rlTexCoord2f(vix, viz);   rlVertex3f(vix, sector->zfloor, viz);
+
+                // Ceiling (facing down)
+                rlNormal3f(0.0f, -1.0f, 0.0f);
+                rlTexCoord2f(v0x, v0z);   rlVertex3f(v0x, sector->zceil, v0z);
+                rlTexCoord2f(vix, viz);   rlVertex3f(vix, sector->zceil, viz);
+                rlTexCoord2f(vi1x, vi1z); rlVertex3f(vi1x, sector->zceil, vi1z);
+            }
+            rlEnd();
+            rlSetTexture(0);
+        }
+
+        rlBegin(RL_QUADS);
+        for (size_t i = 0; i < sector->nwalls; i++)
+        {
+            const wall_t* wall = &state.level.walls[sector->firstwall + i];
+            const int wall_idx = (int)(sector->firstwall + i);
+
+            const bool is_selected = (state.selection.type == SELECT_WALL && state.selection.index == wall_idx);
+            const bool is_hovered = (state.hover.type == SELECT_WALL && state.hover.index == wall_idx);
+            const bool is_selected_sector = (state.selection.type == SELECT_SECTOR && state.selection.index == (int)s);
+            const bool is_highlighted = (is_selected || is_hovered || is_selected_sector) && (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+
+            if (wall->portal != 0 && !is_highlighted) continue;
+
+            const auto l = static_cast<unsigned char>(255 * sector->light);
+            Color tint = { l, l, l, 255 };
+            if (is_highlighted) {
+                tint = (Color){ 255, 255, 255, 60 };
+            }
+            rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+
+            const auto x1 = static_cast<float>(wall->a.x);
+            const auto z1 = static_cast<float>(wall->a.y);
+            const auto x2 = static_cast<float>(wall->b.x);
+            const auto z2 = static_cast<float>(wall->b.y);
+
+            const float wall_length = sqrtf((x2-x1)*(x2-x1) + (z2-z1)*(z2-z1));
+            const float wall_height = sector->zceil - sector->zfloor;
+
+            if (wall_length > 0) rlNormal3f((z2 - z1) / wall_length, 0.0f, -(x2 - x1) / wall_length);
+
+            const float f_h = sector->zfloor;
+            const float c_h = sector->zceil;
+
+            if (wall->portal == 0 && wall->texture.id != 0) rlSetTexture(wall->texture.id);
+            else rlSetTexture(0);
+
+            rlTexCoord2f(wall_length, wall_height); rlVertex3f(x2, f_h, z2);
+            rlTexCoord2f(0.0f, wall_height);        rlVertex3f(x1, f_h, z1);
+            rlTexCoord2f(0.0f, 0.0f);               rlVertex3f(x1, c_h, z1);
+            rlTexCoord2f(wall_length, 0.0f);        rlVertex3f(x2, c_h, z2);
+
+            rlSetTexture(0);
+        }
+        rlEnd();
+    }
+
+    EndMode3D();
+}
 
 // Calculate which side of a line a point is on
 // Returns: < 0 right, 0 on line, > 0 left

@@ -6,8 +6,9 @@
 #include <string>
 #include "raylib.h"
 #include "raymath.h"
-#include "imgui.h"
+#include "rlgl.h"
 #include "rlImGui.h"
+#include "imgui.h"
 
 #define WIDTH 1200
 #define HEIGHT 800
@@ -77,22 +78,5 @@ typedef struct {
 } state_t;
 
 inline state_t state;
-
-// Level loading functions
-int load_level(const char* path);
-int save_level(const char* path);
-void cleanup_level();
-
-// Main loop functions
-void update();
-
-// Utility functions
-bool point_in_sector(const sector_t* sector, v2f p);
-int find_player_sector(v2f pos);
-float point_side(v2f p, v2f a, v2f b);
-
-// Raycast and selection functions
-bool ray_intersects_wall(Vector3 ray_origin, Vector3 ray_dir, const wall_t* wall, const sector_t* sector, float* out_distance);
-selection_t get_selection_from_mouse();
 
 #endif // RAY_MAIN_H
