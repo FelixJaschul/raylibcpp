@@ -3,6 +3,9 @@
 
 int main()
 {
+    // Ensure state is zero-initialized
+    state = {};
+
     // Init
     InitWindow(WIDTH, HEIGHT, "raycast");
     SetTargetFPS(60);
@@ -10,16 +13,19 @@ int main()
     rlImGuiSetup(true);
 
     {
-        ASSERT(load_level("../res/level.txt"));
-        const Texture2D default_tex = LoadTexture("../res/stone.png");
-        if (default_tex.id != 0) {
+        ASSERT(load_level("res/level.txt") == 0);
+
+        {
+            Texture2D default_tex = LoadTexture("../res/stone.png");
             SetTextureWrap(default_tex, TEXTURE_WRAP_REPEAT);
             for (auto& wall : state.level.walls) wall.texture = default_tex;
+            state.ground_texture = LoadTexture("../res/ground.png");
+            SetTextureWrap(state.ground_texture, TEXTURE_WRAP_REPEAT);
         }
 
         // Init camera object
-        state.camera.position = (Vector3){ 2.9f, 2.5f, 2.1f };
-        state.camera.target = (Vector3){ 3.0f, 2.5f, 2.0f };
+        state.camera.position = (Vector3){ 5.8f, 2.5f, 4.2f };
+        state.camera.target = (Vector3){ 6.0f, 2.5f, 4.0f };
         state.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
         state.camera.fovy = 60.0f;
         state.camera.projection = CAMERA_PERSPECTIVE;
@@ -27,6 +33,7 @@ int main()
         // Set initial sector and selection
         state.current_sector = 1;
         state.selection = { SELECT_NONE, -1, -1 };
+        state.hover = { SELECT_NONE, -1, -1 };
     }
 
     while (!WindowShouldClose())
@@ -43,9 +50,15 @@ int main()
             }
             state.m_pos = GetMousePosition();
 
-            // Handle mouse click for selection
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !ImGui::GetIO().WantCaptureMouse) {
+            // Handle mouse click for selection (only when Shift is held)
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !ImGui::GetIO().WantCaptureMouse && (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))) {
                 state.selection = get_selection_from_mouse();
+            }
+
+            if ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && !ImGui::GetIO().WantCaptureMouse) {
+                state.hover = get_selection_from_mouse();
+            } else {
+                state.hover = { SELECT_NONE, -1, -1 };
             }
 
             // Update player sector based on current position
@@ -65,17 +78,71 @@ int main()
             // Draw all walls in all sectors
             for (size_t s = 1; s < state.level.sectors.size(); s++) {
                 const sector_t* sector = &state.level.sectors[s];
+
+                // Draw floor and ceiling
+                if (sector->nwalls >= 3) {
+                    const bool is_selected_sector = (state.selection.type == SELECT_SECTOR && state.selection.index == (int)s);
+                    const bool is_highlighted = is_selected_sector && (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+                    const auto l = static_cast<unsigned char>(255 * sector->light);
+                    Color tint = { l, l, l, 255 };
+                    if (is_highlighted) {
+                        tint = (Color){ 255, 255, 255, 60 }; // Super light white
+                    }
+
+                    if (state.ground_texture.id != 0) {
+                        rlSetTexture(state.ground_texture.id);
+                    }
+
+                    rlBegin(RL_TRIANGLES);
+                    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+
+                    for (size_t i = 1; i < sector->nwalls - 1; i++) {
+                        const wall_t* w0 = &state.level.walls[sector->firstwall];
+                        const wall_t* wi = &state.level.walls[sector->firstwall + i];
+                        const wall_t* wi1 = &state.level.walls[sector->firstwall + i + 1];
+
+                        const float v0x  = static_cast<float>(w0->a.x);
+                        const float v0z  = static_cast<float>(w0->a.y);
+                        const float vix  = static_cast<float>(wi->a.x);
+                        const float viz  = static_cast<float>(wi->a.y);
+                        const float vi1x = static_cast<float>(wi1->a.x);
+                        const float vi1z = static_cast<float>(wi1->a.y);
+
+                        // Floor (facing up)
+                        rlNormal3f(0.0f, 1.0f, 0.0f);
+                        rlTexCoord2f(v0x, v0z);   rlVertex3f(v0x, sector->zfloor, v0z);
+                        rlTexCoord2f(vi1x, vi1z); rlVertex3f(vi1x, sector->zfloor, vi1z);
+                        rlTexCoord2f(vix, viz);   rlVertex3f(vix, sector->zfloor, viz);
+
+                        // Ceiling (facing down)
+                        rlNormal3f(0.0f, -1.0f, 0.0f);
+                        rlTexCoord2f(v0x, v0z);   rlVertex3f(v0x, sector->zceil, v0z);
+                        rlTexCoord2f(vix, viz);   rlVertex3f(vix, sector->zceil, viz);
+                        rlTexCoord2f(vi1x, vi1z); rlVertex3f(vi1x, sector->zceil, vi1z);
+                    }
+                    rlEnd();
+                    rlSetTexture(0);
+                }
+
                 rlBegin(RL_QUADS);
                 for (size_t i = 0; i < sector->nwalls; i++) {
                     const wall_t* wall = &state.level.walls[sector->firstwall + i];
+                    const int wall_idx = (int)(sector->firstwall + i);
+
+                    const bool is_selected = (state.selection.type == SELECT_WALL && state.selection.index == wall_idx);
+                    const bool is_hovered = (state.hover.type == SELECT_WALL && state.hover.index == wall_idx);
+                    const bool is_selected_sector = (state.selection.type == SELECT_SECTOR && state.selection.index == (int)s);
+                    const bool is_highlighted = (is_selected || is_hovered || is_selected_sector) && (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+
+                    if (wall->portal != 0 && !is_highlighted) continue;
 
                     {
-                        if (wall->texture.id != 0) {
-                            rlSetTexture(wall->texture.id);
+                        unsigned char l = (unsigned char)(255 * sector->light);
+                        Color tint = { l, l, l, 255 };
+                        if (is_highlighted) {
+                            tint = (Color){ 255, 100, 200, 160 }; // Pink and see-through
                         }
-
-                        const auto [r, g, b, a] = WHITE;
-                        rlColor4ub(r, g, b, a);
+                        rlColor4ub(tint.r, tint.g, tint.b, tint.a);
 
                         const auto x1 = static_cast<float>(wall->a.x);
                         const auto z1 = static_cast<float>(wall->a.y);
@@ -92,8 +159,10 @@ int main()
                         const float f_h = sector->zfloor;
                         const float c_h = sector->zceil;
 
-                        if (wall->texture.id != 0) {
+                        if (wall->portal == 0 && wall->texture.id != 0) {
                             rlSetTexture(wall->texture.id);
+                        } else {
+                            rlSetTexture(0);
                         }
 
                         rlTexCoord2f(wall_length, wall_height); rlVertex3f(x2, f_h, z2);
@@ -142,7 +211,6 @@ int main()
                         ImGui::Text("Position A: (%d, %d)", wall->a.x, wall->a.y);
                         ImGui::Text("Position B: (%d, %d)", wall->b.x, wall->b.y);
 
-                        ImGui::Text("Portal: %d", wall->portal);
                         if (ImGui::Button("Toggle Portal")) {
                             wall->portal = (wall->portal == 0) ? 1 : 0;
                         }
@@ -179,6 +247,7 @@ int main()
 
                         ImGui::SliderFloat("Floor Height", &sector->zfloor, -5.0f, 10.0f, "%.1f");
                         ImGui::SliderFloat("Ceiling Height", &sector->zceil, 0.0f, 20.0f, "%.1f");
+                        ImGui::SliderFloat("Light Level", &sector->light, 0.0f, 1.0f, "%.2f");
 
                         ImGui::Text("Walls in this sector:");
                         for (size_t i = 0; i < sector->nwalls; i++) {

@@ -44,6 +44,7 @@ typedef struct {
     size_t nwalls;      // Number of walls in this sector
     float zfloor;       // Floor height
     float zceil;        // Ceiling height
+    float light;        // Light level (0.0 to 1.0)
 } sector_t;
 
 // Level structure
@@ -71,6 +72,8 @@ typedef struct {
     Camera3D camera;
     int current_sector;  // Which sector the player is in
     selection_t selection;
+    selection_t hover;
+    Texture2D ground_texture;
 } state_t;
 
 inline state_t state;

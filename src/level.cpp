@@ -36,7 +36,8 @@ int find_player_sector(v2f pos) {
     constexpr int QUEUE_MAX = 64;
     int queue[QUEUE_MAX] = { state.current_sector };
     int i = 0, n = 1;
-    bool visited[MAX_SECT] = { false };
+    bool visited[MAX_SECT];
+    std::memset(visited, 0, sizeof(visited));
 
     while (n > 0) {
         const int id = queue[i];
@@ -142,22 +143,6 @@ selection_t get_selection_from_mouse() {
         result.type = SELECT_WALL;
         result.index = closest_wall;
         result.wall_index = closest_wall;
-
-        // Also store which sector this wall belongs to
-        for (size_t s = 1; s < state.level.sectors.size(); s++) {
-            const sector_t* sector = &state.level.sectors[s];
-            if (closest_wall >= static_cast<int>(sector->firstwall) &&
-                closest_wall < static_cast<int>(sector->firstwall + sector->nwalls)) {
-                closest_sector = s;
-                break;
-            }
-        }
-    }
-
-    // If we hit a wall, we can also select its sector
-    if (closest_sector != -1) {
-        // Store sector info for potential sector selection
-        result.index = closest_sector;
     }
 
     return result;
@@ -176,7 +161,8 @@ int load_level(const char* path) {
     state.level.walls.clear();
 
     // Sector 0 is reserved as "no sector"
-    state.level.sectors.push_back(sector_t{});
+    sector_t zero_sector = {};
+    state.level.sectors.push_back(zero_sector);
 
     enum { SCAN_NONE, SCAN_SECTOR, SCAN_WALL } scan_state = SCAN_NONE;
 
@@ -219,7 +205,7 @@ int load_level(const char* path) {
 
         switch (scan_state) {
             case SCAN_WALL: {
-                wall_t wall;
+                wall_t wall = {};
                 if (!(iss >> wall.a.x >> wall.a.y >> wall.b.x >> wall.b.y >> wall.portal)) {
                     LOG("Error: Invalid wall data at line " << line_num);
                     return -4;
@@ -230,8 +216,8 @@ int load_level(const char* path) {
             }
 
             case SCAN_SECTOR: {
-                sector_t sector;
-                if (!(iss >> sector.id >> sector.firstwall >> sector.nwalls >> sector.zfloor >> sector.zceil)) {
+                sector_t sector = {};
+                if (!(iss >> sector.id >> sector.firstwall >> sector.nwalls >> sector.zfloor >> sector.zceil >> sector.light)) {
                     LOG("Error: Invalid sector data at line " << line_num);
                     return -5;
                 }
@@ -259,6 +245,10 @@ void cleanup_level() {
         if (wall.texture.id != 0) {
             UnloadTexture(wall.texture);
         }
+    }
+
+    if (state.ground_texture.id != 0) {
+        UnloadTexture(state.ground_texture);
     }
 
     state.level.sectors.clear();
