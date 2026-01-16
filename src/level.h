@@ -23,4 +23,4 @@ float point_side(v2f p, v2f a, v2f b);
 bool ray_intersects_wall(Vector3 ray_origin, Vector3 ray_dir, const wall_t* wall, const sector_t* sector, float* out_distance);
 selection_t get_selection_from_mouse();
 
-#endif //RAY_LEVEL_H
+#endif // RAY_LEVEL_H

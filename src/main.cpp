@@ -46,8 +46,11 @@ void update()
 
 void render()
 {
-    render_level();
-    render_ui();
+    BeginDrawing();
+    ClearBackground(BLACK);
+        render_level();
+        render_ui();
+    EndDrawing();
 }
 
 void deinit()
@@ -64,10 +67,7 @@ int main()
     while (!WindowShouldClose())
     {
         update();
-        BeginDrawing();
-            ClearBackground(BLACK);
-            render();
-        EndDrawing();
+        render();
     }
     deinit();
     return 0;
