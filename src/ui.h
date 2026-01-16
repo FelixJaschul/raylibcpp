@@ -8,4 +8,4 @@ void deinit_ui();
 void update_ui();
 void render_ui();
 
-#endif //RAY_UI_H
+#endif // RAY_UI_H
