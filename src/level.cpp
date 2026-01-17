@@ -31,7 +31,15 @@ void update_level()
 {
     if (const int new_sector = find_player_sector({ state.camera.position.x, state.camera.position.z });
         new_sector != SECTOR_NONE)
+    {
         state.current_sector = new_sector;
+        const sector_t* sector = &state.level.sectors[state.current_sector];
+
+        const float dy = sector->zfloor + PLAYER_HEIGHT - state.camera.position.y;
+        
+        state.camera.position.y += dy;
+        state.camera.target.y += dy;
+    }
 }
 
 void render_level()
@@ -39,7 +47,8 @@ void render_level()
     BeginMode3D(state.camera);
 
     // Draw all walls in all sectors
-    for (size_t s = 1; s < state.level.sectors.size(); s++) {
+    for (size_t s = 1; s < state.level.sectors.size(); s++)
+    {
         const sector_t* sector = &state.level.sectors[s];
 
         // Draw floor and ceiling

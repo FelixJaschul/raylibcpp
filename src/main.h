@@ -12,6 +12,7 @@
 
 #define WIDTH 1200
 #define HEIGHT 800
+#define PLAYER_HEIGHT 2.0f
 #define MAX_WALLS 128
 #define MAX_SECT  128
 #define SECTOR_NONE 0
@@ -22,7 +23,6 @@
 #define MAX(a, b) (( (a) > (b) ) ? (a) : (b))
 #define MIN(a, b) (( (a) < (b) ) ? (a) : (b))
 
-// 2D vector for level geometry
 typedef struct {
     int x, y;
 } v2i;
@@ -31,30 +31,26 @@ typedef struct {
     float x, y;
 } v2f;
 
-// Wall structure with portal support
 typedef struct {
-    v2i a, b;           // Wall endpoints
-    int portal;         // Portal to another sector (0 = solid wall)
-    Texture2D texture;  // Wall texture
+    v2i a, b;
+    int portal;
+    Texture2D texture;
 } wall_t;
 
-// Sector structure
 typedef struct {
-    int id;             // Sector ID
-    size_t firstwall;   // Index of first wall in global wall array
-    size_t nwalls;      // Number of walls in this sector
-    float zfloor;       // Floor height
-    float zceil;        // Ceiling height
-    float light;        // Light level (0.0 to 1.0)
+    int id;
+    size_t firstwall;
+    size_t nwalls;
+    float zfloor;
+    float zceil;
+    float light;
 } sector_t;
 
-// Level structure
 typedef struct {
     std::vector<sector_t> sectors;
     std::vector<wall_t> walls;
 } level_t;
 
-// Selection types
 enum SelectionType {
     SELECT_NONE,
     SELECT_WALL,
@@ -63,15 +59,15 @@ enum SelectionType {
 
 typedef struct {
     SelectionType type;
-    int index;          // Index of selected wall or sector
-    int wall_index;     // For sectors, which wall was clicked
+    int index;
+    int wall_index;
 } selection_t;
 
 typedef struct {
     level_t level;
     Vector2 m_pos;
     Camera3D camera;
-    int current_sector;  // Which sector the player is in
+    int current_sector;
     selection_t selection;
     selection_t hover;
     Texture2D ground_texture;

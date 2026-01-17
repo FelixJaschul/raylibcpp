@@ -10,13 +10,15 @@ void init()
     init_ui();
     init_level();
 
-    state.camera.position = (Vector3){ 5.8f, 2.5f, 4.2f };
-    state.camera.target = (Vector3){ 6.0f, 2.5f, 4.0f };
+    state.current_sector = 1;
+    const auto start_z = state.level.sectors[state.current_sector].zfloor;
+
+    state.camera.position = (Vector3){ 5.8f, start_z + PLAYER_HEIGHT, 4.2f };
+    state.camera.target = (Vector3){ 6.0f, start_z + PLAYER_HEIGHT, 4.0f };
     state.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     state.camera.fovy = 60.0f;
     state.camera.projection = CAMERA_PERSPECTIVE;
 
-    state.current_sector = 1;
     state.selection = { SELECT_NONE, -1, -1 };
     state.hover = { SELECT_NONE, -1, -1 };
 }
